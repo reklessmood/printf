@@ -1,55 +1,66 @@
-#include <unistd.h>
-#include <stdarg.h>
 #include "main.h"
 
-#define SIZE_OF_SPECIFIERS 5
+void print_buffer(char buffer[], int *buff_index);
 
 /**
- * _printf - produces output according to a format.
- * @format: a character string composed of zero or more directives.
- *
- * Return: the number of characters printed.
+ * _printf - Printf function
+ * @format: format.
+ * Return: Printed chars.
  */
 int _printf(const char *format, ...)
 {
-	sp_t sp[] = { {'c', handle_char}, {'s', handle_str}, {'%', handle_percent},
-		{'d', handle_integers_decimal}, {'i', handle_integers_decimal} };
-	int i, n, counter = 0;
+	int j, output = 0, output_chars = 0;
+	int flags, width, precision, size, buff_index = 0;
 	va_list args;
+	char buffer[BUFF_SIZE];
 
-	if (!format)
+	if (format == NULL)
 		return (-1);
+
 	va_start(args, format);
-	while (*format)
+
+	for (j = 0; format && format[j] != '\0'; j++)
 	{
-		if (*format == '%')
+		if (format[j] != '%')
 		{
-			i = 0;
-			while (i < SIZE_OF_SPECIFIERS)
-			{
-				if (sp[i].s == *(format + 1))
-				{
-					(i == 1 || i == 3 || i == 4) ?
-						counter += sp[i].f(args) - 1 : sp[i].f(args);
-					format++;
-					break;
-				}
-				i++;
-			}
-			if (i == SIZE_OF_SPECIFIERS)
-			{
-				n = handle_default(*format, *(format + 1), format, args);
-				if (n == -1)
-					return (-1);
-				format = increment_format(n, format);
-				counter = update_counter(n, counter);
-			}
+			buffer[buff_index++] = format[j];
+			if (buff_index == BUFF_SIZE)
+				print_buffer(buffer, &buff_index);
+			/* write(1, &format[j], 1);*/
+			output_chars++;
 		}
 		else
-			write(1, format, 1);
-		format++;
-		counter++;
+		{
+			print_buffer(buffer, &buff_index);
+			flags = get_flags(format, &j);
+			width = get_width(format, &j, args);
+			precision = get_precision(format, &j, args);
+			size = get_size(format, &j);
+			++j;
+			output = handle_print(format, &j, args, buffer,
+				flags, width, precision, size);
+			if (output == -1)
+				return (-1);
+			output_chars += output;
+		}
 	}
+
+	print_buffer(buffer, &buff_index);
+
 	va_end(args);
-	return (counter);
+
+	return (output_chars);
+}
+
+/**
+ * print_buffer - Prints the contents of the buffer if it exist
+ * @buffer: Array of chars
+ * @buff_index: Index at which to add next char, represents the length.
+ */
+void print_buffer(char buffer[], int *buff_index)
+{
+	if (*buff_index > 0)
+		write(1, &buffer[0], *buff_index);
+
+	*buff_index = 0;
 }
