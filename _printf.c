@@ -66,7 +66,6 @@ int _printf(const char *format, ...)
 				unsigned int num = va_arg(argument, unsigned int);
 
 				return (print_binary(num));
-
 			}
 			else if (*format == 'r')
 			{
